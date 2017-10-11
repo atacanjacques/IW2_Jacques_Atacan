@@ -21,14 +21,23 @@ var bot = new builder.UniversalBot(connector, [
     }
 ]);
 
+var menuItems = {
+    "Se présenter" : {
+        item : "greetings"
+    },
+    "Réserver" :{
+        item : "resa"
+    }
+}
+
 bot.dialog('greetings', [
-    function (session) {
+    function (session) { 
         session.send('Bienvenue dans le bot Résa');
         session.beginDialog('askName');
     },
     function (session, results) {
         session.userData.userName = results.response;
-        session.send('Bonjour %s!', session.userData.userName);
+        session.send(`Bonjour ${session.userData.userName}`);
         session.beginDialog('resa');
     }
 ]);
@@ -47,24 +56,26 @@ bot.dialog('resa', [
         session.beginDialog('resaDate');
     },
     function (session, results) {
-        session.beginDialog('resaNumber');
+        session.beginDialog('resaNbPeople');
     },
     function (session) {
         session.beginDialog('resaName');
     },
     function (session) {
+        session.beginDialog('resaTel');
+    },
+    function (session) {
         var resa = {
             resaDate: session.conversationData.resaDate,
-            resaNb: session.conversationData.resaNb,
-            resaName: session.conversationData.resaName
+            resaNbPeople: session.conversationData.resaNbPeople,
+            resaName: session.conversationData.resaName,
+            resaTel: session.conversationData.resaTel,            
         }
 
         resa.resaDate = new Date(Date.parse(resa.resaDate));
-        resa.resaDate = resa.resaDate.toDateString();
+        resa.resaDate = resa.resaDate.toISOString().substr(0, 19).replace('T', ' ');  
 
-        session.send('Date: ' + resa.resaDate);
-        session.send('Nombre de personne: ' + resa.resaNb);
-        session.send('Résa au nom de: ' + resa.resaName);
+        session.send(`Date : ${resa.resaDate}<br>Nombre de personne : ${resa.resaNbPeople}<br>Résa au nom de ${resa.resaName}<br>Tel : ${resa.resaTel}`);
     }
 ]);
 
@@ -78,12 +89,12 @@ bot.dialog('resaDate', [
     }
 ]);
 
-bot.dialog('resaNumber', [
+bot.dialog('resaNbPeople', [
     function (session) {
         builder.Prompts.number(session, "Combien de personne ?");
     },
     function (session, results) {
-        session.conversationData.resaNb = results.response;
+        session.conversationData.resaNbPeople = results.response;
         session.endDialog();
     }
 ]);
@@ -95,5 +106,24 @@ bot.dialog('resaName', [
     function (session, results) {
         session.conversationData.resaName = results.response;
         session.endDialog();
+    }
+]);
+
+bot.dialog('resaTel', [
+    function (session, args) {
+        if (args && args.reprompt) {
+            builder.Prompts.text(session, "Le numéro doit contenir 10 chiffres et commencer par 06 ou 07");
+        } else {
+            builder.Prompts.text(session, "Votre numéro de tel ?");
+        }
+    },
+    function (session, results) {
+        var matched = results.response.match(/^(01|06|07)[0-9]{8}$/g);
+        if (matched) {
+            session.conversationData.resaTel = results.response;
+            session.endDialog();
+        } else {
+            session.replaceDialog('resaTel', { reprompt: true });
+        }
     }
 ]);
