@@ -21,17 +21,8 @@ var bot = new builder.UniversalBot(connector, [
     }
 ]);
 
-var menuItems = {
-    "Se présenter" : {
-        item : "greetings"
-    },
-    "Réserver" :{
-        item : "resa"
-    }
-}
-
 bot.dialog('greetings', [
-    function (session) { 
+    function (session) {
         session.send('Bienvenue dans le bot Résa');
         session.beginDialog('askName');
     },
@@ -69,11 +60,11 @@ bot.dialog('resa', [
             resaDate: session.conversationData.resaDate,
             resaNbPeople: session.conversationData.resaNbPeople,
             resaName: session.conversationData.resaName,
-            resaTel: session.conversationData.resaTel,            
+            resaTel: session.conversationData.resaTel,
         }
 
         resa.resaDate = new Date(Date.parse(resa.resaDate));
-        resa.resaDate = resa.resaDate.toISOString().substr(0, 19).replace('T', ' ');  
+        resa.resaDate = resa.resaDate.toISOString().substr(0, 19).replace('T', ' ');
 
         session.send(`Date : ${resa.resaDate}<br>Nombre de personne : ${resa.resaNbPeople}<br>Résa au nom de ${resa.resaName}<br>Tel : ${resa.resaTel}`);
     }
@@ -112,7 +103,7 @@ bot.dialog('resaName', [
 bot.dialog('resaTel', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, "Le numéro doit contenir 10 chiffres et commencer par 06 ou 07");
+            builder.Prompts.text(session, "Le numéro doit contenir 10 chiffres et commencer par 01, 06 ou 07");
         } else {
             builder.Prompts.text(session, "Votre numéro de tel ?");
         }
@@ -127,3 +118,38 @@ bot.dialog('resaTel', [
         }
     }
 ]);
+
+
+var menuItems = {
+    "Se présenter": {
+        item: "greetings"
+    },
+    "Réserver": {
+        item: "resa"
+    }
+};
+
+bot.dialog('mainMenu', [
+    function (session) {
+        builder.Prompts.choice(session, "Menu :", menuItems);
+    },
+    function (session, results) {
+        if (results.response) {
+            session.beginDialog(menuItems[results.response.entity].item);
+        }
+    }
+])
+    .triggerAction({
+        matches: /^menu$/i,
+        confirmPrompt: "Çela annulera l'action en cours ! Voulez vous continuer ?"
+    })
+    .reloadAction(
+    "restartResa", "Recommencons", {
+        matches: /^reload$/i,
+        confirmPrompt: "Çela annulera l'action en cours ! Voulez vous tout recommencer ?"
+    })
+    .cancelAction(
+    "cancelResa", "Annulation", {
+        matches: /^cancel$/i,
+        confirmPrompt: "Çela annulera l'action en cours ! Voulez vous annuler ?"
+    });
