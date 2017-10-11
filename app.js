@@ -15,24 +15,26 @@ var connector = new builder.ChatConnector({
 server.post('/api/messages', connector.listen());
 
 
-var bot = new builder.UniversalBot(connector, function (session) {
+var bot = new builder.UniversalBot(connector, [
+    function (session) {
+        session.beginDialog('greetings');
+    }
+]);
 
-    bot.dialog('greetings', [
-        function (session) {
-            session.beginDialog('askName');
-        },
-        function (session, results) {
-            session.endDialogWithResult('Hello %s!', results.response);
-        }
-    ]);
+bot.dialog('greetings', [
+    function (session) {
+        session.beginDialog('askName');
+    },
+    function (session, results) {
+        session.endDialog('Hello %s!', results.response);
+    }
+]);
 
-    bot.dialog('askName', [
-        function (session) {
-            builder.Prompts.text(session, 'Hi! What is your name?');
-        },
-        function (session, results) {
-            session.endDialogWithResult(results);
-        }
-    ]);
-
-});
+bot.dialog('askName', [
+    function (session) {
+        builder.Prompts.text(session, 'Hi! What is your name?');
+    },
+    function (session, results) {
+        session.endDialogWithResult(results);
+    }
+]);
